@@ -3,6 +3,8 @@
 ###                                             send "nanoSeconds=$nanoSeconds\r"
 ###                                             send "ru_ip=$ip\r"
 ls -altr
+who
 rm /var/volatile/tmp/temp_*.txt
 rm /var/volatile/tmp/header_*.txt
+usleep 250001
 exit
