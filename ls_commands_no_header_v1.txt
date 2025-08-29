@@ -1,0 +1,8 @@
+###                                             send "RUoutputNumber=$RUNumberInFile\r"
+###                                             send "script_process_number=$script_process_number\r"
+###                                             send "nanoSeconds=$nanoSeconds\r"
+###                                             send "ru_ip=$ip\r"
+ls -altr
+rm /var/volatile/tmp/temp_*.txt
+rm /var/volatile/tmp/header_*.txt
+exit

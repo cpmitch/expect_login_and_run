@@ -1,0 +1,37 @@
+numberOfTempFields=1
+loopCount=0
+fieldLoopCount=0
+varFifteen=15
+varFourteen=14
+varSixteen=16
+varSeventeen=17
+jumpServerNanoSeconds=$jumpServerNanoSeconds
+
+echo -n "RU_No," > header_$nanoSeconds.txt
+echo -n $RUoutputNumber > temp_$nanoSeconds.txt
+echo -n "," >> temp_$nanoSeconds.txt
+
+if [ $fieldLoopCount -gt 1 ] ; then
+   echo -n "##" >> temp_$nanoSeconds.txt
+   echo -n "##$fieldLoopCount##$script_process_number##" >> temp_$nanoSeconds.txt
+else
+   echo -n "##$script_process_number" >> temp_$nanoSeconds.txt
+   echo -n "##" >> temp_$nanoSeconds.txt
+   echo -n "##" >> temp_$nanoSeconds.txt
+   echo -n "##" >> temp_$nanoSeconds.txt
+fi
+echo -n "##$script_process_number##" >> temp_$nanoSeconds.txt
+echo "" >> temp_$nanoSeconds.txt
+echo ""
+
+echo -n "##" >> header_$nanoSeconds.txt
+echo -n "##" >> header_$nanoSeconds.txt
+echo "" >> header_$nanoSeconds.txt
+
+if [ $RUoutputNumber == 1 ] ; then
+   cat header_$nanoSeconds.txt
+fi
+cat temp_$nanoSeconds.txt
+rm temp_$nanoSeconds.txt
+rm header_$nanoSeconds.txt
+exit
