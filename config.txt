@@ -1,0 +1,19 @@
+# Network configuration
+jump_server1=localhost
+username1=joe_dirt
+password1=password1!
+timeout=10
+
+# Secondary jump server (optional)
+jump_server2=localhost
+username2=joe_dirt
+password2=password2!
+
+# RU username
+ru_username1=ru_username1
+ru_username2=ru_username2
+
+# RU passwords
+ru_password1=password1!
+ru_password2=password2!
+ru_password3=password3!
