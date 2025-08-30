@@ -396,24 +396,18 @@ puts "Successfully logged into 2nd jump server"
 # FIXED: Main IP processing loop
 foreach ip $ips {
     # puts "Begin for loop with RU $ip which is $RUNumberInFile .."
-    puts "Begin for loop with RU $ip ."
+    set marker_file_status_of_ru [check_ip_marker $ip]
     check_for_pause
-    if {$ip eq ""} {
-        continue
-    }
-
+    puts "Begin for loop with RU $ip ."
+    # if {$ip eq ""} {
+    #     continue
+    # }
     # Validate IP format first to prevent strange values
     # if {![regexp {^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$} $ip]} {
     #     puts "WARNING: Invalid IP format: '$ip' - skipping"
     #     continue
     # }
     #
-    # Lot of code, 13 lines removed from here...
-    #
-    # Now get IP info and check markers
-    # set RUNumberInFile [return_line_number_from_file_of_ipaddrs_v2 $ip]
-    set marker_file_status_of_ru [check_ip_marker $ip]
-
     # puts "DEBUG: RU Number: $RUNumberInFile, Marker status: $marker_file_status_of_ru"
 
     switch $marker_file_status_of_ru {
@@ -426,9 +420,8 @@ foreach ip $ips {
             incr in_progress_marker_files_encountered
         }
         "marker_file_not_found" {
-            set RUNumberInFile [return_line_number_from_file_of_ipaddrs_v2 $ip]
             create_in_progress_marker $ip
-
+            set RUNumberInFile [return_line_number_from_file_of_ipaddrs_v2 $ip]
             send "whoami\r"
             expect {
                 -re $interop_whoami {
