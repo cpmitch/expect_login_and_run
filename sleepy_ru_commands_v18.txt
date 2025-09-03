@@ -1,0 +1,277 @@
+numberOfTempFields=1
+loopCount=0
+fieldLoopCount=0
+varFifteen=15
+varFourteen=14
+varSixteen=16
+varSeventeen=17
+nanoSeconds=$nanoSeconds
+# RUoutputNumber=$RUNumberInFile
+script_process_number=$script_process_number
+until [ "$numberOfTempFields" -eq "$varSeventeen" ] ; do
+echo -n "RU_No," > header_$nanoSeconds.txt
+echo -n $RUoutputNumber > temp_$nanoSeconds.txt
+echo -n "," >> temp_$nanoSeconds.txt
+dateStamp=$(date +"%Y-%m-%d %H:%M:%S")
+echo -n "RU_Timestamp_UTC," >> header_$nanoSeconds.txt
+echo -n $dateStamp >> temp_$nanoSeconds.txt
+echo -n "," >> temp_$nanoSeconds.txt
+ru_serial=$(/opt/du/du -inventory | grep Serial | awk '{print $4}')
+echo -n "RU_Serial," >> header_$nanoSeconds.txt
+echo -n $ru_serial >> temp_$nanoSeconds.txt
+echo -n "," >> temp_$nanoSeconds.txt
+ru_ip=$ru_ip
+echo -n "RU_IP," >> header_$nanoSeconds.txt
+echo -n $ru_ip >> temp_$nanoSeconds.txt
+echo -n "," >> temp_$nanoSeconds.txt
+ruuptime=$(uptime -s)
+echo -n "RU_UPTIME," >> header_$nanoSeconds.txt
+echo -n $ruuptime >> temp_$nanoSeconds.txt
+echo -n "," >> temp_$nanoSeconds.txt
+vlanid=$(ifconfig | grep fheth0.201 | grep -o 201)
+RC1=$?
+if [ $RC1 == 0 ] ; then
+   vlanid=201
+else
+   vlanid=205
+fi
+echo -n "RU_VLAN," >> header_$nanoSeconds.txt
+echo -n "VLAN-ID:" >> temp_$nanoSeconds.txt
+echo -n $vlanid >> temp_$nanoSeconds.txt
+echo -n "," >> temp_$nanoSeconds.txt
+softwareVersion=$(/opt/du/du -ver | grep 'True.*True' | awk '{ print $9 }' | tr -d '\n')
+echo -n "RU_SOFTWARE," >> header_$nanoSeconds.txt
+echo -n "SW:" >> temp_$nanoSeconds.txt
+echo -n $softwareVersion >> temp_$nanoSeconds.txt
+echo -n "," >> temp_$nanoSeconds.txt
+vartempfilepercent=$(df -h | grep '/var/volatile' | awk '{ print $5 }')
+echo -n "FileSYS_used%," >> header_$nanoSeconds.txt
+echo -n $vartempfilepercent >> temp_$nanoSeconds.txt
+echo -n "," >> temp_$nanoSeconds.txt
+fiveMinLoad=$(cat /proc/loadavg | awk '{ print $1 }')
+echo -n "FiveMinLoad," >> header_$nanoSeconds.txt
+echo -n $fiveMinLoad >> temp_$nanoSeconds.txt
+echo -n "," >> temp_$nanoSeconds.txt
+configArrivedFromDU=$(/opt/du/du -txinfo | grep ON | wc -l)
+if [ $configArrivedFromDU == 0 ] ; then
+   configPresent=DU_config_present:NO
+else
+   configPresent=DU_config_present:YES
+fi
+echo -n "RU_CONFIG_PRESENT," >> header_$nanoSeconds.txt
+echo "We found config present to be: $configPresent."
+echo -n $configPresent >> temp_$nanoSeconds.txt
+echo -n "," >> temp_$nanoSeconds.txt
+echo -n "n66_Tx_Carrier_Quantity(2)," >> header_$nanoSeconds.txt
+echo -n "n66_Rx_Carrier_Quantity(1)," >> header_$nanoSeconds.txt
+echo -n "n70_Tx_Carrier_Quantity(1)," >> header_$nanoSeconds.txt
+echo -n "n70_Rx_Carrier_Quantity(1)," >> header_$nanoSeconds.txt
+echo -n "FPGA_Register," >> header_$nanoSeconds.txt
+echo -n "Software_Register," >> header_$nanoSeconds.txt
+ruSerialPrefix=$(/opt/du/du -inventory | grep -e "Serial number" | awk '{ print $4 }' | cut -c 1-3)
+if [ "$ruSerialPrefix" == "2MF" ] ; then
+   numN66TxCarriers=$(/opt/du/du -txinfo | grep -A6 'ANT#A Tx Information' | grep N66 | grep ON | wc -l)
+   echo -n "$numN66TxCarriers" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+   numN66RxCarriers=$(/opt/du/du -rxinfo | grep -A6 'ANT#A Rx Information' | grep N66 | grep ON | wc -l)
+   echo -n "$numN66RxCarriers" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+   numN70TxCarriers=$(/opt/du/du -txinfo | grep -A6 'ANT#A Tx Information' | grep N70 | grep ON | wc -l)
+   echo -n "$numN70TxCarriers" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+   numN70RxCarriers=$(/opt/du/du -rxinfo | grep -A6 'ANT#A Rx Information' | grep N70 | grep ON | wc -l)
+   echo -n "$numN70RxCarriers" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+   fullSWA2207000Register=$(rrh -r A2207000 1000 | grep A2207400)
+   echo "We found SW Register to be: $fullSWA2207000Register "
+   until [ ${#fullSWA2207000Register} -gt 8 ] ; do
+      one=1
+      fullSWA2207000Register=$(rrh -r A2207000 1000 | grep A2207400)
+      echo "We found SW Register to be: $fullSWA2207000Register "
+      loopCount=$(( loopCount + 1 ))
+      if [ $loopCount -gt 10 ] ; then
+         echo "Need to quit, cannot grab the registers off the RU"
+         rm temp_$nanoSeconds.txt
+         rm header_$nanoSeconds.txt
+         exit
+      fi
+      sleep 1
+   done
+   reducedSWA2207000Register1=$(echo $fullSWA2207000Register | awk '{ print $3 }')
+   # echo "We found the first half of the register to be: $reducedSWA2207000Register1 "
+   reducedSWA2207000Register2=$(echo $fullSWA2207000Register | awk '{ print $4 }')
+   # echo "We found the second half of the register to be: $reducedSWA2207000Register2 "
+   #
+   ### Below is the 2,1,1,1 RU
+   if ( [ $numN66TxCarriers -eq 2 ] && [ $numN66RxCarriers -eq 1 ] && [ $numN70TxCarriers -eq 1 ] && [ $numN70RxCarriers -eq 1 ] ) ; then
+      reducedFPGAA2200900Register=$(rrh -r A2200000 1000 | grep A2200900 | awk '{ print $5 }')
+      if [ "$reducedFPGAA2200900Register" == "00000000" ] ; then
+         echo -n "FPGA_Register:OK:$reducedFPGAA2200900Register" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      else
+         echo -n "FPGA_Register:NOK:$reducedFPGAA2200900Register" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      fi
+      ### reducedSWA2207000Register1=$(rrh -r A2207000 1000 | grep A2207400 | awk '{ print $3 }')
+      ### reducedSWA2207000Register2=$(rrh -r A2207000 1000 | grep A2207400 | awk '{ print $4 }')
+      if ( ( [ "$reducedSWA2207000Register1" == "00000014" ] && [ "$reducedSWA2207000Register2" == "00000010" ] ) ) ||
+         ( ( [ "$reducedSWA2207000Register1" == "00000014" ] && [ "$reducedSWA2207000Register2" == "00000011" ] ) ) ||
+         ( ( [ "$reducedSWA2207000Register1" == "00000011" ] && [ "$reducedSWA2207000Register2" == "00000014" ] ) ) ||
+         ( ( [ "$reducedSWA2207000Register1" == "00000010" ] && [ "$reducedSWA2207000Register2" == "00000014" ] ) )  ; then
+         echo -n "Software_Register:OK:$reducedSWA2207000Register1 $reducedSWA2207000Register2" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      else
+         echo -n "Software_Register:NOK:$reducedSWA2207000Register1 $reducedSWA2207000Register2" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      fi
+   fi
+   ### Below is the 2,1,0,0 RU
+   if ( [ $numN66TxCarriers -eq 2 ] && [ $numN66RxCarriers -eq 1 ] && [ $numN70TxCarriers -eq 0 ] && [ $numN70RxCarriers -eq 0 ] ) ; then
+      reducedFPGAA2200900Register=$(rrh -r A2200000 1000 | grep A2200900 | awk '{ print $5 }')
+      if [ "$reducedFPGAA2200900Register" == "00000000" ] ; then
+         echo -n "FPGA_Register:OK:$reducedFPGAA2200900Register" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      else
+         echo -n "FPGA_Register:NOK:$reducedFPGAA2200900Register" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      fi
+      ### reducedSWA2207000Register1=$(rrh -r A2207000 1000 | grep A2207400 | awk '{ print $3 }')
+      ### reducedSWA2207000Register2=$(rrh -r A2207000 1000 | grep A2207400 | awk '{ print $4 }')
+      if ( ( [ "$reducedSWA2207000Register1" == "00000011" ] && [ "$reducedSWA2207000Register2" == "00000000" ] ) )  ; then
+         echo -n "Software_Register:OK:$reducedSWA2207000Register1 $reducedSWA2207000Register2" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      else
+         echo -n "Software_Register:NOK:$reducedSWA2207000Register1 $reducedSWA2207000Register2" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      fi
+   fi
+   ### Below is the 1,1,1,1 RU
+   if ( [ $numN66TxCarriers -eq 1 ] && [ $numN66RxCarriers -eq 1 ] && [ $numN70TxCarriers -eq 1 ] && [ $numN70RxCarriers -eq 1 ] ) ; then
+      reducedFPGAA2200900Register=$(rrh -r A2200000 1000 | grep A2200900 | awk '{ print $5 }')
+      if [ "$reducedFPGAA2200900Register" == "00000000" ] ; then
+         echo -n "FPGA_Register:OK:$reducedFPGAA2200900Register" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      else
+         echo -n "FPGA_Register:NOK:$reducedFPGAA2200900Register" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      fi
+      ### reducedSWA2207000Register1=$(rrh -r A2207000 1000 | grep A2207400 | awk '{ print $3 }')
+      ### reducedSWA2207000Register2=$(rrh -r A2207000 1000 | grep A2207400 | awk '{ print $4 }')
+      if ( ( [ "$reducedSWA2207000Register1" == "00000014" ] && [ "$reducedSWA2207000Register2" == "00000011" ] ) ) ||
+         ( ( [ "$reducedSWA2207000Register1" == "00000014" ] && [ "$reducedSWA2207000Register2" == "00000010" ] ) ) ||
+         ( ( [ "$reducedSWA2207000Register1" == "00000010" ] && [ "$reducedSWA2207000Register2" == "00000014" ] ) )  ; then
+         echo -n "Software_Register:OK:$reducedSWA2207000Register1 $reducedSWA2207000Register2" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      else
+         echo -n "Software_Register:NOK:$reducedSWA2207000Register1 $reducedSWA2207000Register2" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      fi
+   fi
+   ### Below is the 1,1,0,0 RU
+   if ( [ $numN66TxCarriers -eq 1 ] && [ $numN66RxCarriers -eq 1 ] && [ $numN70TxCarriers -eq 0 ] && [ $numN70RxCarriers -eq 0 ] ) ; then
+      reducedFPGAA2200900Register=$(rrh -r A2200000 1000 | grep A2200900 | awk '{ print $5 }')
+      if [ "$reducedFPGAA2200900Register" == "00000000" ] ; then
+         echo -n "FPGA_Register:OK:$reducedFPGAA2200900Register" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      else
+         echo -n "FPGA_Register:NOK:$reducedFPGAA2200900Register" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      fi
+      ### reducedSWA2207000Register1=$(rrh -r A2207000 1000 | grep A2207400 | awk '{ print $3 }')
+      ### reducedSWA2207000Register2=$(rrh -r A2207000 1000 | grep A2207400 | awk '{ print $4 }')
+      if ( ( [ "$reducedSWA2207000Register1" == "00000000" ] && [ "$reducedSWA2207000Register2" == "00000011" ] ) ) ||
+         ( ( [ "$reducedSWA2207000Register1" == "00000011" ] && [ "$reducedSWA2207000Register2" == "00000000" ] ) ) ; then
+   ### Below is the 1,0,1,1 RU
+         echo -n "Software_Register:OK:$reducedSWA2207000Register1 $reducedSWA2207000Register2" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      else
+         echo -n "Software_Register:NOK:$reducedSWA2207000Register1 $reducedSWA2207000Register2" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      fi
+   fi
+   ### Below is the 1,0,1,1 RU
+   if ( [ $numN66TxCarriers -eq 1 ] && [ $numN66RxCarriers -eq 0 ] && [ $numN70TxCarriers -eq 1 ] && [ $numN70RxCarriers -eq 1 ] ) ; then
+      reducedFPGAA2200900Register=$(rrh -r A2200000 1000 | grep A2200900 | awk '{ print $5 }')
+      if [ "$reducedFPGAA2200900Register" == "00000000" ] ; then
+         echo -n "FPGA_Register:OK:$reducedFPGAA2200900Register" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      else
+     echo -n "FPGA_Register:NOK:$reducedFPGAA2200900Register" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+    fi
+      ### reducedSWA2207000Register1=$(rrh -r A2207000 1000 | grep A2207400 | awk '{ print $3 }')
+      ### reducedSWA2207000Register2=$(rrh -r A2207000 1000 | grep A2207400 | awk '{ print $4 }')
+      if ( ( [ "$reducedSWA2207000Register1" == "00000014" ] && [ "$reducedSWA2207000Register2" == "00000000" ] ) ) ; then
+         echo -n "Software_Register:OK:$reducedSWA2207000Register1 $reducedSWA2207000Register2" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      else
+         echo -n "Software_Register:NOK:$reducedSWA2207000Register1 $reducedSWA2207000Register2" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      fi
+   fi
+   ### Below is the rare case 0,0,1,1 RU
+   if ( [ $numN66TxCarriers -eq 0 ] && [ $numN66RxCarriers -eq 0 ] && [ $numN70TxCarriers -eq 1 ] && [ $numN70RxCarriers -eq 1 ] ) ; then
+      reducedFPGAA2200900Register=$(rrh -r A2200000 1000 | grep A2200900 | awk '{ print $5 }')
+      if [ "$reducedFPGAA2200900Register" == "00000000" ] ; then
+         echo -n "FPGA_Register:OK:$reducedFPGAA2200900Register" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      else
+         echo -n "FPGA_Register:NOK:$reducedFPGAA2200900Register" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      fi
+      ### reducedSWA2207000Register1=$(rrh -r A2207000 1000 | grep A2207400 | awk '{ print $3 }')
+      ### reducedSWA2207000Register2=$(rrh -r A2207000 1000 | grep A2207400 | awk '{ print $4 }')
+      if ( ( [ "$reducedSWA2207000Register1" == "00000014" ] && [ "$reducedSWA2207000Register2" == "00000000" ] ) ) ; then
+         echo -n "Software_Register:OK:$reducedSWA2207000Register1 $reducedSWA2207000Register2" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      else
+         echo -n "Software_Register:NOK:$reducedSWA2207000Register1 $reducedSWA2207000Register2" >> temp_$nanoSeconds.txt ; echo -n "," >> temp_$nanoSeconds.txt
+      fi
+   fi
+   ### Below is the 0,0,0,0 RU
+   if ( [ $numN66TxCarriers -eq 0 ] && [ $numN66RxCarriers -eq 0 ] && [ $numN70TxCarriers -eq 0 ] && [ $numN70RxCarriers -eq 0 ] ) ; then
+      echo -n "," >> temp_$nanoSeconds.txt
+      echo -n "," >> temp_$nanoSeconds.txt
+   fi
+fi
+numberOfTempFields=$(awk -F',' '{ print NF }' temp_$nanoSeconds.txt)
+echo "Number of fields in the temp file is: $numberOfTempFields ."
+fieldLoopCount=$(( fieldLoopCount + 1 ))
+if [ $fieldLoopCount -gt 1 ] ; then
+   echo "Time to slow down, cannot populate $ru_ip which is $RUoutputNumber with enough fields."
+   ls -altr
+   cat temp_$nanoSeconds.txt
+   sleep 1
+fi
+if [ $fieldLoopCount -gt 2 ] ; then
+   echo "Time to quit, cannot populate $ru_ip which is $RUoutputNumber with enough fields."
+   ls -altr
+   cat temp_$nanoSeconds.txt
+   sleep 1
+   echo -n "RU_No," > header_$nanoSeconds.txt
+   echo -n $RUoutputNumber > temp_$nanoSeconds.txt
+   echo -n "," >> temp_$nanoSeconds.txt
+   dateStamp=$(date +"%Y-%m-%d %H:%M:%S")
+   echo -n "RU_Timestamp_UTC," >> header_$nanoSeconds.txt
+   echo -n $dateStamp >> temp_$nanoSeconds.txt
+   echo -n "," >> temp_$nanoSeconds.txt
+   ru_serial=$(/opt/du/du -inventory | grep Serial | awk '{print $4}')
+   echo -n "RU_Serial," >> header_$nanoSeconds.txt
+   echo -n $ru_serial >> temp_$nanoSeconds.txt
+   echo -n "," >> temp_$nanoSeconds.txt
+   ru_ip=$ru_ip
+   echo -n "RU_IP," >> header_$nanoSeconds.txt
+   echo -n $ru_ip >> temp_$nanoSeconds.txt
+   echo -n "$RUoutputNumber,Sorry,We,$ru_ip,To,Stop,Since,Cannot,Populate,With,Enough,Fields,Maybe,Try,Again,Later,##$script_process_number" > temp_$nanoSeconds.txt
+   echo -n "##" >> temp_$nanoSeconds.txt
+   echo -n "##" >> temp_$nanoSeconds.txt
+   if [ $fieldLoopCount -gt 1 ] ; then
+      echo -n "##" >> temp_$nanoSeconds.txt
+      echo -n "##$fieldLoopCount##" >> temp_$nanoSeconds.txt
+   else
+      echo -n "##" >> temp_$nanoSeconds.txt
+      echo -n "##" >> temp_$nanoSeconds.txt
+   fi
+   if [ $RUoutputNumber == 1 ] ; then
+      cat header_$nanoSeconds.txt
+   fi
+   cat temp_$nanoSeconds.txt
+   ls -altr
+   # rm header_*.txt
+   # rm temp_*.txt
+   rm header_$nanoSeconds.txt
+   rm temp_$nanoSeconds.txt
+   exit
+fi
+done
+# fi
+echo -n "##" >> temp_$nanoSeconds.txt
+echo -n "##$script_process_number##" >> temp_$nanoSeconds.txt
+echo -n "##" >> temp_$nanoSeconds.txt
+echo "" >> temp_$nanoSeconds.txt
+echo ""
+echo -n "##" >> header_$nanoSeconds.txt
+echo -n "##" >> header_$nanoSeconds.txt
+echo "" >> header_$nanoSeconds.txt
+if [ $RUoutputNumber == 1 ] ; then
+   cat header_$nanoSeconds.txt
+fi
+cat temp_$nanoSeconds.txt
+rm header_$nanoSeconds.txt
+rm temp_$nanoSeconds.txt
+# rm temp_*.txt
+# rm header_*.txt
+exit
