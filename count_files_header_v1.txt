@@ -1,0 +1,139 @@
+numberOfTempFields=1
+loopCount=0
+fieldLoopCount=0
+varFifteen=15
+varFourteen=14
+varSixteen=16
+varSeventeen=17
+nanoSeconds=$nanoSeconds
+script_process_number=$script_process_number
+#
+   echo -n "RU_No," > header_$nanoSeconds.txt
+   echo -n $RUoutputNumber > temp_$nanoSeconds.txt
+   echo -n "," >> temp_$nanoSeconds.txt
+   #
+   dateStamp=$(date +"%Y-%m-%d %H:%M:%S")
+   echo -n "RU_Timestamp_UTC," >> header_$nanoSeconds.txt
+   echo -n $dateStamp >> temp_$nanoSeconds.txt
+   echo -n "," >> temp_$nanoSeconds.txt
+   #
+   ru_serial=$(/opt/du/du -inventory | grep Serial | awk '{print $4}')
+   echo -n "RU_Serial," >> header_$nanoSeconds.txt
+   echo -n $ru_serial >> temp_$nanoSeconds.txt
+   echo -n "," >> temp_$nanoSeconds.txt
+   #
+   ru_ip=$ru_ip
+   echo -n "RU_IP," >> header_$nanoSeconds.txt
+   echo -n $ru_ip >> temp_$nanoSeconds.txt
+   echo -n "," >> temp_$nanoSeconds.txt
+   #
+   ruuptime=$(uptime -s)
+   echo -n "RU_UPTIME," >> header_$nanoSeconds.txt
+   echo -n $ruuptime >> temp_$nanoSeconds.txt
+   echo -n "," >> temp_$nanoSeconds.txt
+   #
+   vlanid=$(ifconfig | grep fheth0.201 | grep -o 201)
+   RC1=$?
+   if [ $RC1 == 0 ] ; then
+      vlanid=201
+   else
+      vlanid=205
+   fi
+   echo -n "RU_VLAN," >> header_$nanoSeconds.txt
+   echo -n "VLAN-ID:" >> temp_$nanoSeconds.txt
+   echo -n $vlanid >> temp_$nanoSeconds.txt
+   echo -n "," >> temp_$nanoSeconds.txt
+   #
+   softwareVersion=$(/opt/du/du -ver | grep 'True.*True' | awk '{ print $9 }' | tr -d '\n')
+   echo -n "RU_SOFTWARE," >> header_$nanoSeconds.txt
+   echo -n "SW:" >> temp_$nanoSeconds.txt
+   echo -n $softwareVersion >> temp_$nanoSeconds.txt
+   echo -n "," >> temp_$nanoSeconds.txt
+   #
+   vartempfilepercent=$(df -h | grep '/var/volatile' | awk '{ print $5 }')
+   echo -n "FileSYS_used%," >> header_$nanoSeconds.txt
+   echo -n $vartempfilepercent >> temp_$nanoSeconds.txt
+   echo -n "," >> temp_$nanoSeconds.txt
+   #
+   fiveMinLoad=$(cat /proc/loadavg | awk '{ print $1 }')
+   echo -n "FiveMinLoad," >> header_$nanoSeconds.txt
+   echo -n $fiveMinLoad >> temp_$nanoSeconds.txt
+   echo -n "," >> temp_$nanoSeconds.txt
+   #
+   numberOfFilesInRU=$(ls -altr | wc -l)
+   echo -n "Number_of_Files," >> header_$nanoSeconds.txt
+   echo -n $numberOfFilesInRU >> temp_$nanoSeconds.txt
+   echo -n "," >> temp_$nanoSeconds.txt
+   #
+
+   configArrivedFromDU=$(/opt/du/du -txinfo | grep ON | wc -l)
+   if [ $configArrivedFromDU == 0 ] ; then
+   configPresent=DU_config_present:NO
+   else
+      configPresent=DU_config_present:YES
+   fi
+   echo -n "RU_CONFIG_PRESENT," >> header_$nanoSeconds.txt
+   echo "We found config present to be: $configPresent."
+   echo -n $configPresent >> temp_$nanoSeconds.txt
+   echo -n "," >> temp_$nanoSeconds.txt
+   #
+   site_sector=$(/opt/du/du -mpconfig | grep -e "<alias>" | grep -o '[A-Z].*' | cut -c 1-16)
+   if [ "$site_sector" == "" ] ; then
+      site_sector="NA"
+   fi
+   echo -n $site_sector >> temp_$nanoSeconds.txt
+   echo -n "," >> temp_$nanoSeconds.txt
+   echo -n "RU_Sector," >> header_$nanoSeconds.txt
+   #
+   re_stat | grep -A86 'Fault Active List' | grep -q ': Active'
+   RC2=$?
+   if [ $RC2 == 0 ] ; then
+      re_stat | grep -A86 'Fault Active List' | grep ': Active' > active.txt
+      ru_alarm_list=$(cat active.txt | awk -F: '{ print $1 }' | awk '{$1=$1;print}' | sed 's/$/|/g' | tr -d '\n' | sed 's/.$//')
+   else
+      ru_alarm_list="None"
+   fi
+   echo -n "RU_Alarms," >> header_$nanoSeconds.txt
+   echo -n $ru_alarm_list >> temp_$nanoSeconds.txt
+   echo -n "," >> temp_$nanoSeconds.txt
+   rm active.txt
+   #
+   /opt/du/du -highiqlog | grep -A8 B11001E4 | egrep -q '2023|2024|2025'
+   RC0=$?
+   if [ $RC0 == 0 ] ; then
+      detectedHIIQ=YES
+      /opt/du/du -highiqlog | grep -A8 B11001E4 | egrep '2023|2024|2025' > active.txt
+      stringHIIQ=$(awk -F'  ' '{ print $2 " " $3 " " $4 " " $5}' active.txt | sed 's/] /]\n/g' | egrep '2024|2025' | sed 's/$/|/g' | tr -d '\n' | sed 's/.$//')
+   else
+      detectedHIIQ=NO
+      stringHIIQ=None
+   fi
+   echo -n "Hi-IQ_Present," >> header_$nanoSeconds.txt
+   echo -n "Hi-IQ_Present:" >> temp_$nanoSeconds.txt
+   echo -n $detectedHIIQ >> temp_$nanoSeconds.txt
+   echo -n "," >> temp_$nanoSeconds.txt
+   echo -n "Hi-IQ_String," >> header_$nanoSeconds.txt
+   echo -n "Hi-IQ_String:" >> temp_$nanoSeconds.txt
+   echo -n $stringHIIQ >> temp_$nanoSeconds.txt
+   echo -n "," >> temp_$nanoSeconds.txt
+
+
+
+echo -n "##" >> temp_$nanoSeconds.txt
+echo -n "##$script_process_number##" >> temp_$nanoSeconds.txt
+echo -n "##" >> temp_$nanoSeconds.txt
+echo "" >> temp_$nanoSeconds.txt
+echo ""
+echo -n "##" >> header_$nanoSeconds.txt
+echo -n "##" >> header_$nanoSeconds.txt
+echo "" >> header_$nanoSeconds.txt
+if [ $RUoutputNumber == 1 ] ; then
+   cat header_$nanoSeconds.txt
+fi
+cat temp_$nanoSeconds.txt
+rm header_$nanoSeconds.txt
+rm temp_$nanoSeconds.txt
+rm active.txt
+# rm temp_*.txt
+# rm header_*.txt
+exit
