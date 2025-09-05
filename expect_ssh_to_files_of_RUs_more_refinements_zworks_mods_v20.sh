@@ -179,13 +179,14 @@ puts "File of RU commands: $file_of_ru_commands"
 set line_count [exec wc -l < $file_of_ipaddrs]
 set nanoSeconds [exec date +%N]
 
-proc log_message {message} {
-    puts "[clock format [clock seconds] -format {%Y-%m-%d %H:%M:%S}] $message"
-}
+#######################################################################################################
+# proc log_message {message} {
+#     puts "[clock format [clock seconds] -format {%Y-%m-%d %H:%M:%S}] $message"
+# }
 
-set logFileTimeStamp [exec date +%Y-%m-%d__%H_%M_%S_%N]
-log_file -a "./logs/PeteM_$logFileTimeStamp.txt"
-log_user 1
+# set logFileTimeStamp [exec date +%Y-%m-%d__%H_%M_%S_%N]
+# log_file -a "./logs/PeteM_$logFileTimeStamp.txt"
+# log_user 1
 
 #######################################################################################################
 proc return_line_number_from_file_of_ipaddrs_v2 {ipaddr} {
@@ -446,7 +447,7 @@ foreach ip $ips {
             expect {
                 # Ping failure - skip SSH completely
                 -re "1 packets transmitted, 0 received, 100% packet loss" {
-                    log_message "Ping failure for $ip - skipping SSH attempt"
+                    # log_message "Ping failure for $ip - skipping SSH attempt"
                     incr ping_failure
                     puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,RU,ping,failure,maybe,try,again,later,in,the,day,OK,##$script_process_number####"
                     delete_in_progress_marker $ip
@@ -467,7 +468,7 @@ foreach ip $ips {
 
                 # Ping success - proceed with SSH logic
                 -re "1 packets transmitted, 1 received, 0% packet loss" {
-                    log_message "Ping success for $ip - proceeding with SSH"
+                    # log_message "Ping success for $ip - proceeding with SSH"
                     incr ping_success
 
                     # Wait for command prompt after ping
@@ -648,13 +649,13 @@ puts "#### Complete marker files written: $completed_marker_files_written ."
 puts "#### In_Progress marker files encountered: $in_progress_marker_files_encountered ."
 puts "#### Ping success / ping Failure: $ping_success / $ping_failure ."
 puts "#### Extra code hook exercised: $extra_code_hook_exercised ."
-log_message "#### Successful RU logins: $successful_RU_logins / $line_count lines in the file."
-log_message "#### Unsuccessful RU passwords: $unsuccessful_RU_logins / $line_count lines in the file."
-log_message "#### Complete marker files encountered: $completed_marker_files_encountered ."
-log_message "#### Complete marker files written: $completed_marker_files_written ."
-log_message "#### In_Progress marker files encountered: $in_progress_marker_files_encountered ."
-log_message "#### Ping success / ping Failure: $ping_success / $ping_failure ."
-log_message "#### Extra code hook exercised: $extra_code_hook_exercised ."
+# log_message "#### Successful RU logins: $successful_RU_logins / $line_count lines in the file."
+# log_message "#### Unsuccessful RU passwords: $unsuccessful_RU_logins / $line_count lines in the file."
+# log_message "#### Complete marker files encountered: $completed_marker_files_encountered ."
+# log_message "#### Complete marker files written: $completed_marker_files_written ."
+# log_message "#### In_Progress marker files encountered: $in_progress_marker_files_encountered ."
+# log_message "#### Ping success / ping Failure: $ping_success / $ping_failure ."
+# log_message "#### Extra code hook exercised: $extra_code_hook_exercised ."
 
 set successful_RU_logins 0
 set completed_marker_files_encountered 0
