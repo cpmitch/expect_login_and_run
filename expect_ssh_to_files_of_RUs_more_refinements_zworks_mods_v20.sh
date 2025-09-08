@@ -400,10 +400,10 @@ puts "Successfully logged into 2nd jump server"
 #######################################################################################################
 # FIXED: Main IP processing loop
 foreach ip $ips {
+    puts "Begin for loop with RU $ip ."
     # puts "Begin for loop with RU $ip which is $RUNumberInFile .."
     set marker_file_status_of_ru [check_ip_marker $ip]
     check_for_pause
-    puts "Begin for loop with RU $ip ."
     # if {$ip eq ""} {
     #     continue
     # }
@@ -427,7 +427,8 @@ foreach ip $ips {
         "marker_file_not_found" {
             create_in_progress_marker $ip
             set RUNumberInFile [return_line_number_from_file_of_ipaddrs_v2 $ip]
-            send "whoami\r"
+            # send "whoami\r"
+            send "\r\n"
             expect {
                 -re $interop_whoami {
                     puts "Got the correct prompt for logging into RU $ip which is $RUNumberInFile ."
@@ -449,8 +450,12 @@ foreach ip $ips {
                 -re "1 packets transmitted, 0 received, 100% packet loss" {
                     # log_message "Ping failure for $ip - skipping SSH attempt"
                     incr ping_failure
-                    puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,RU,ping,failure,maybe,try,again,later,in,the,day,OK,##$script_process_number####"
+                    # puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,RU,ping,failure,maybe,try,again,later,in,the,day,OK,##$script_process_number####"
+                    # send "\r"
+                    # puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,RU,ping,failure,##$script_process_number####"
+                    # send "\r"
                     delete_in_progress_marker $ip
+                    puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,RU,ping,failure,##$script_process_number####"
                     # Consume any remaining output and continue to next IP
                     expect -re {[$#%>] }
                 }
@@ -459,10 +464,14 @@ foreach ip $ips {
                 timeout {
                     puts "Ping command timeout for $ip - skipping SSH attempt"
                     incr ping_failure
-                    puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,RU,ping,failure,maybe,try,again,later,in,the,day,OK,##$script_process_number####"
+                    # puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,RU,ping,timeout,maybe,try,again,later,in,the,day,OK,##$script_process_number####"
+                    # send "\r"
+                    # puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,RU,ping,failure,##$script_process_number####"
+                    # send "\r"
                     # Send Ctrl+C to cancel ping and wait for prompt
                     send "\003"
                     delete_in_progress_marker $ip
+                    puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,RU,ping,failure,##$script_process_number####"
                     expect -re {[$#%>] }
                 }
 
@@ -537,6 +546,8 @@ foreach ip $ips {
                                                     # delete_completed_marker $ip
                                                     sleep 2
                                                     send "\r"
+                                                    sleep 2
+                                                    send "\r"
                                                     send "whoami\r"
                                                     expect {
                                                         -re $interop_whoami {
@@ -580,9 +591,11 @@ foreach ip $ips {
                                     }
                                 }
                                 "*) Password:*" {
-                                    puts "Connection to $ip appears not to be a Fujitsu RU, moving to next IP."
+                                    puts "Connection to $ip appears not to be a known linux system, moving to next IP."
                                     set connection_failed true
-                                    puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,RU,ping,failure,##$script_process_number####"
+                                    send "\r"
+                                    puts "$RUNumberInFile,Sorry,Will,$ip,Reach,This,unknown,system,failure,##$script_process_number####"
+                                    # send "\r"
                                     delete_in_progress_marker $ip
                                     send "\003"
                                     expect -re {[$#%>] }
@@ -629,6 +642,7 @@ foreach ip $ips {
                     }
                 }
             }
+            send "/r"
         }
         "error" {
             puts "Error checking marker for RU $ip, skipping..."
