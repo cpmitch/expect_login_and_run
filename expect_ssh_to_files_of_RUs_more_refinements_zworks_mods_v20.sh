@@ -27,6 +27,7 @@ set RUNumberInFile 0
 set marker_file_status_of_ru "unknown"
 set ping_success 0
 set ping_failure 0
+set ping_from_ru_failure 0
 set script_process_number ""
 set extra_code_hook_exercised 0
 
@@ -436,6 +437,7 @@ foreach ip $ips {
                 timeout {
                     puts "Timeout waiting for expected prompt"
                     delete_in_progress_marker $ip
+                    send " exit\r"
                 }
                 eof {
                     puts "Connection closed unexpectedly"
@@ -446,7 +448,6 @@ foreach ip $ips {
             puts "DEBUG: About to ping IP: '$ip'"
             send " ping -c 1 -w 1 $ip\r"
             expect {
-                # Ping failure - skip SSH completely
                 -re "1 packets transmitted, 0 received, 100% packet loss" {
                     # log_message "Ping failure for $ip - skipping SSH attempt"
                     incr ping_failure
@@ -454,9 +455,17 @@ foreach ip $ips {
                     # send "\r"
                     # puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,RU,ping,failure,##$script_process_number####"
                     # send "\r"
-                    delete_in_progress_marker $ip
+                    # delete_in_progress_marker $ip
                     puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,RU,ping,failure,##$script_process_number####"
                     # Consume any remaining output and continue to next IP
+                    expect -re {[$#%>] }
+                }
+                -re "ping: permission denied (are you root?)" {
+                    incr ping_from_ru_failure
+                    delete_in_progress_marker $ip
+                    puts "$RUNumberInFile,Sorry,Cannot,$ip,Ping,From,RU,software,failure,##$script_process_number####"
+                    # Consume any remaining output and continue to next IP
+                    send " exit\r"
                     expect -re {[$#%>] }
                 }
 
@@ -470,7 +479,7 @@ foreach ip $ips {
                     # send "\r"
                     # Send Ctrl+C to cancel ping and wait for prompt
                     send "\003"
-                    delete_in_progress_marker $ip
+                    #  delete_in_progress_marker $ip
                     puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,RU,ping,failure,##$script_process_number####"
                     expect -re {[$#%>] }
                 }
@@ -540,7 +549,7 @@ foreach ip $ips {
                                                     puts "While looping, got the Interop prompt with fjuser1 ID ..."
                                                 }
                                                 timeout {
-                                                    puts "Failed to get proxy-connect prompt for $ip which is $RUNumberInFile ."
+                                                    puts "Failed to get proxy-connect prompt which is $interop_whoami for $ip which is $RUNumberInFile ."
                                                     delete_in_progress_marker $ip
                                                     ### Noticed a case where the below line is not necessary:
                                                     # delete_completed_marker $ip
@@ -555,7 +564,7 @@ foreach ip $ips {
                                                         incr extra_code_hook_exercised
                                                         }
                                                         timeout {
-                                                        puts "Again failed to get proxy-connect prompt for $ip which is $RUNumberInFile  so exiting."
+                                                        puts "Again failed to get proxy-connect prompt which is $interop_whoami for $ip which is $RUNumberInFile so exiting."
                                                         exit 1
                                                         }
                                                     }
@@ -662,6 +671,7 @@ puts "#### Complete marker files encountered: $completed_marker_files_encountere
 puts "#### Complete marker files written: $completed_marker_files_written ."
 puts "#### In_Progress marker files encountered: $in_progress_marker_files_encountered ."
 puts "#### Ping success / ping Failure: $ping_success / $ping_failure ."
+puts "#### Ping from RU failure: $ping_from_ru_failure ."
 puts "#### Extra code hook exercised: $extra_code_hook_exercised ."
 # log_message "#### Successful RU logins: $successful_RU_logins / $line_count lines in the file."
 # log_message "#### Unsuccessful RU passwords: $unsuccessful_RU_logins / $line_count lines in the file."
