@@ -390,6 +390,7 @@ send "whoami\r"
 expect {
     -re $interop_whoami {
         puts "Reached the 2nd jump server's Interop prompt with fjuser1 ID ..."
+        send "export PS1=\"\\\\u@\\\\h:\\\\w\\\\$ \"\r"
     }
     timeout {
         puts "Failed to get proxy-connect prompt"
@@ -508,6 +509,12 @@ foreach ip $ips {
                             send " ssh -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -tt $ru_username1@$ip\r"
 
                             expect {
+                                -re "(.*WARNING.*)" {
+                                    puts "Found WARNING in banner:"
+                                    puts $expect_out(1,string)
+                                    puts "Sending Ctrl-C to abort"
+                                    send "\003"
+                                }
                                 "*password:*" {
                                     puts "\n--- Sending password $password"
                                     send "$password\r"
@@ -605,7 +612,7 @@ foreach ip $ips {
                                     send "\r"
                                     puts "$RUNumberInFile,Sorry,Will,$ip,Reach,This,unknown,system,failure,##$script_process_number####"
                                     # send "\r"
-                                    delete_in_progress_marker $ip
+                                    # delete_in_progress_marker $ip
                                     send "\003"
                                     expect -re {[$#%>] }
                                 }
@@ -644,7 +651,8 @@ foreach ip $ips {
 
                         if {!$logged_in && !$connection_failed} {
                             puts "Failed to log in to $ip with any of the provided passwords."
-                            delete_in_progress_marker $ip
+                            # delete_in_progress_marker $ip
+                            send "\r"
                         }
 
                         puts "\n--------------------------------------------- Logout $ru_username1@$ip which was $RUNumberInFile ---"
