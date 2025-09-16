@@ -235,7 +235,7 @@ if [ $fieldLoopCount -gt 2 ] ; then
    ru_ip=$ru_ip
    echo -n "RU_IP," >> header_$nanoSeconds.txt
    echo -n $ru_ip >> temp_$nanoSeconds.txt
-   echo -n "$RUoutputNumber,Sorry,We,$ru_ip,To,Stop,Since,Cannot,Populate,With,Enough,Fields,Maybe,Try,Again,Later,##$script_process_number" > temp_$nanoSeconds.txt
+   echo -n "$RUoutputNumber,Sorry,Cannot,$ru_ip,To,Stop,Since,Cannot,Populate,With,Enough,Fields,Maybe,Try,Again,Later,##$script_process_number" > temp_$nanoSeconds.txt
    echo -n "##" >> temp_$nanoSeconds.txt
    echo -n "##" >> temp_$nanoSeconds.txt
    if [ $fieldLoopCount -gt 1 ] ; then
