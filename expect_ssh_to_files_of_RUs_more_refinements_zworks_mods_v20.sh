@@ -610,7 +610,7 @@ foreach ip $ips {
                                     puts "Connection to $ip appears not to be a known linux system, moving to next IP."
                                     set connection_failed true
                                     send "\r"
-                                    puts "$RUNumberInFile,Sorry,Will,$ip,Reach,This,unknown,system,failure,##$script_process_number####"
+                                    puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,unknown,system,failure,##$script_process_number####"
                                     # send "\r"
                                     # delete_in_progress_marker $ip
                                     send "\003"
