@@ -430,7 +430,8 @@ foreach ip $ips {
             create_in_progress_marker $ip
             set RUNumberInFile [return_line_number_from_file_of_ipaddrs_v2 $ip]
             # send "whoami\r"
-            send "\r\n"
+            # send "who\r"
+            send "\r"
             expect {
                 -re $interop_whoami {
                     puts "Got the correct prompt for logging into RU $ip which is $RUNumberInFile ."
@@ -447,16 +448,22 @@ foreach ip $ips {
             }
 
             puts "DEBUG: About to ping IP: '$ip'"
-            send " ping -c 1 -w 1 $ip\r"
+            # send " ping -c 1 -w 1 $ip\r"
+            send " ping -c 1 -W 0.5 $ip\r"
             expect {
                 -re "1 packets transmitted, 0 received, 100% packet loss" {
                     # log_message "Ping failure for $ip - skipping SSH attempt"
+                    # send "whoami\r"
+                    # send "\r"
+                    # puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,RU,ping,failure,##$script_process_number####"
                     incr ping_failure
                     # puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,RU,ping,failure,maybe,try,again,later,in,the,day,OK,##$script_process_number####"
                     # send "\r"
                     # puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,RU,ping,failure,##$script_process_number####"
                     # send "\r"
                     # delete_in_progress_marker $ip
+                    # Below sleep line fixes a long-standing bug of the jump server prompt and the Sorry message appearing on the smae output line.
+                    puts " sleep 1\r &"
                     puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,RU,ping,failure,##$script_process_number####"
                     # Consume any remaining output and continue to next IP
                     expect -re {[$#%>] }
