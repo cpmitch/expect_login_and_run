@@ -339,6 +339,30 @@ proc delete_completed_marker {ip} {
 }
 
 #######################################################################################################
+proc print_final_report {} {
+    global successful_RU_logins line_count unsuccessful_RU_logins completed_marker_files_encountered completed_marker_files_written
+    global in_progress_marker_files_encountered ping_success ping_failure ping_from_ru_failure extra_code_hook_exercised
+    puts "\n--- Script completed ---"
+    puts "\n=== Environment setup complete ==="
+    puts "You now have control of the session."
+    puts "Type 'exit' or press Ctrl+D to disconnect.\n"
+    puts "#### Successful RU logins: $successful_RU_logins / $line_count lines in the file."
+    puts "#### Unsuccessful RU passwords: $unsuccessful_RU_logins / $line_count lines in the file."
+    puts "#### Complete marker files encountered: $completed_marker_files_encountered ."
+    puts "#### Complete marker files written: $completed_marker_files_written ."
+    puts "#### In_Progress marker files encountered: $in_progress_marker_files_encountered ."
+    puts "#### Ping success / ping Failure: $ping_success / $ping_failure ."
+    puts "#### Ping from RU failure: $ping_from_ru_failure ."
+    puts "#### Extra code hook exercised: $extra_code_hook_exercised ."
+    # log_message "#### Successful RU logins: $successful_RU_logins / $line_count lines in the file."
+    # log_message "#### Unsuccessful RU passwords: $unsuccessful_RU_logins / $line_count lines in the file."
+    # log_message "#### Complete marker files encountered: $completed_marker_files_encountered ."
+    # log_message "#### Complete marker files written: $completed_marker_files_written ."
+    # log_message "#### In_Progress marker files encountered: $in_progress_marker_files_encountered ."
+    # log_message "#### Ping success / ping Failure: $ping_success / $ping_failure ."
+    # log_message "#### Extra code hook exercised: $extra_code_hook_exercised ."
+}
+#######################################################################################################
 # Read files
 puts "Now reading in first argument file which contains list of IP addresses, or $file_of_ipaddrs ."
 set fp_ips [open $file_of_ipaddrs r]
@@ -465,7 +489,9 @@ foreach ip $ips {
                     # delete_in_progress_marker $ip
                     # Below sleep line fixes a long-standing bug of the jump server prompt and the Sorry message appearing on the smae output line.
                     puts " sleep 1\r &"
-                    puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,RU,ping,failure,##$script_process_number####"
+                    puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,RU,ping,failure,,,,,,,##$script_process_number####"
+                    mark_ip_completed $ip
+                    delete_in_progress_marker $ip
                     # Consume any remaining output and continue to next IP
                     expect -re {[$#%>] }
                 }
@@ -519,6 +545,8 @@ foreach ip $ips {
                             expect {
                                 -re "(.*WARNING.*)" {
                                     puts "Found WARNING in banner:"
+                                    mark_ip_completed $ip
+                                    delete_in_progress_marker $ip
                                     puts $expect_out(1,string)
                                     puts "Sending Ctrl-C to abort"
                                     send "\003"
@@ -570,7 +598,7 @@ foreach ip $ips {
                                                     # delete_completed_marker $ip
                                                     sleep 2
                                                     send "\r"
-                                                    sleep 2
+                                                    sleep 10
                                                     send "\r"
                                                     send "whoami\r"
                                                     expect {
@@ -579,7 +607,7 @@ foreach ip $ips {
                                                         incr extra_code_hook_exercised
                                                         }
                                                         timeout {
-                                                        puts "Again failed to get proxy-connect prompt which is $interop_whoami for $ip which is $RUNumberInFile so exiting."
+                                                        print_final_report 
                                                         exit 1
                                                         }
                                                     }
@@ -618,9 +646,11 @@ foreach ip $ips {
                                     puts "Connection to $ip appears not to be a known linux system, moving to next IP."
                                     set connection_failed true
                                     send "\r"
-                                    puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,unknown,system,failure,##$script_process_number####"
+                                    puts "$RUNumberInFile,Sorry,Cannot,$ip,Reach,This,unknown,system,failure,,,,,,,##$script_process_number####"
                                     # send "\r"
                                     # delete_in_progress_marker $ip
+                                    mark_ip_completed $ip
+                                    delete_in_progress_marker $ip
                                     send "\003"
                                     expect -re {[$#%>] }
                                 }
@@ -677,26 +707,8 @@ foreach ip $ips {
     # puts "Checking for STOP marker..."
     check_for_stop $ip
 }
-puts "\n--- Script completed ---"
-puts "\n=== Environment setup complete ==="
-puts "You now have control of the session."
-puts "Type 'exit' or press Ctrl+D to disconnect.\n"
-puts "#### Successful RU logins: $successful_RU_logins / $line_count lines in the file."
-puts "#### Unsuccessful RU passwords: $unsuccessful_RU_logins / $line_count lines in the file."
-puts "#### Complete marker files encountered: $completed_marker_files_encountered ."
-puts "#### Complete marker files written: $completed_marker_files_written ."
-puts "#### In_Progress marker files encountered: $in_progress_marker_files_encountered ."
-puts "#### Ping success / ping Failure: $ping_success / $ping_failure ."
-puts "#### Ping from RU failure: $ping_from_ru_failure ."
-puts "#### Extra code hook exercised: $extra_code_hook_exercised ."
-# log_message "#### Successful RU logins: $successful_RU_logins / $line_count lines in the file."
-# log_message "#### Unsuccessful RU passwords: $unsuccessful_RU_logins / $line_count lines in the file."
-# log_message "#### Complete marker files encountered: $completed_marker_files_encountered ."
-# log_message "#### Complete marker files written: $completed_marker_files_written ."
-# log_message "#### In_Progress marker files encountered: $in_progress_marker_files_encountered ."
-# log_message "#### Ping success / ping Failure: $ping_success / $ping_failure ."
-# log_message "#### Extra code hook exercised: $extra_code_hook_exercised ."
 
+print_final_report
 set successful_RU_logins 0
 set completed_marker_files_encountered 0
 set in_progress_marker_files_encountered 0
